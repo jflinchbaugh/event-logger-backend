@@ -5,7 +5,7 @@
   com.taoensso/timbre {:mvn/version "6.0.4"}
   com.fzakaria/slf4j-timbre {:mvn/version "0.3.21"}
   tick/tick {:mvn/version "0.5.0"}
-  hiccup {:mvn/version "1.0.5"}
+  hiccup/hiccup {:mvn/version "1.0.5"}
   com.xtdb/xtdb-core {:mvn/version "1.23.0"}
   com.xtdb/xtdb-rocksdb {:mvn/version "1.23.0"}}
 

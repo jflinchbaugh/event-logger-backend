@@ -73,6 +73,7 @@
    {:login login
     :password password
     :categories []}))
+
 (defn register-handler
   [req]
   (let [id (get-id req)

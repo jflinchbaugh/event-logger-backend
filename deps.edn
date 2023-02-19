@@ -1,7 +1,7 @@
 {:deps
  {http-kit/http-kit {:mvn/version "2.6.0"}
   ring/ring-defaults {:mvn/version "0.3.4"}
-  buddy/buddy-auth {:mvn/version "3.0.1"}
+  buddy/buddy-auth {:mvn/version "3.0.323"}
   metosin/reitit-ring {:mvn/version "0.5.18"}
   org.clojure/data.json {:mvn/version "2.4.0"}
   com.taoensso/timbre {:mvn/version "6.0.4"}
@@ -14,4 +14,4 @@
  :paths ["src" "test" "resources"]
 
  :aliases
- {}}
+ {:run {:main-opts ["-m" "event-logger-backend.core"]}}}

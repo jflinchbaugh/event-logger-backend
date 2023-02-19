@@ -14,3 +14,8 @@ download the event-logger data:
 ```
 $ curl -s -v -u u:p http://localhost:8080/api/logger/z
 ```
+
+post new categories data:
+```
+$ curl -s -v -u u:p -H 'Content-Type: application/json' -d '{"categories": [{"thing": true,"whatever": 2}]}' http://localhost:8080/api/logger/z
+```

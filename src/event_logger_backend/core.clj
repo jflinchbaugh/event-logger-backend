@@ -5,7 +5,9 @@
             [buddy.auth.middleware :as buddy]
             [buddy.auth.backends :as backends]
             [reitit.ring :as ring]
-            [clojure.data.json :as json]))
+            [clojure.data.json :as json]
+            [clojure.java.io :as io]
+            [tick.core :as t]))
 
 (def url-base "")
 
@@ -13,27 +15,32 @@
 
 (defonce storage (atom {}))
 
-(defn url [u]
+(defn url
+  [u]
   (str url-base u))
+
+(defn api-response
+  [code response-map]
+  {:status code
+   :headers {"Content-Type" "application/json"}
+   :body (json/write-str response-map)})
 
 (defn not-found
   [& _]
-  {:status 404
-   :headers {"Content-Type" "text/plain"}
-   :body "Not Found"})
+  (api-response
+   404
+   {:error "Not Found"}))
 
 (defn unauthorized
   [& _]
   {:status 401
-   :headers {"Content-Type" "text/plain"
+   :headers {"Content-Type" "application/json"
              "WWW-Authenticate" (format "Basic realm=%s" realm)}
-   :body "Authentication Required"})
+   :body (json/write-str {:error "Unauthorized"})})
 
 (defn ping-handler
   [req]
-  {:status  200
-   :headers {"Content-Type" "text/plain"}
-   :body    "pong"})
+  (api-response 200 {:response "pong"}))
 
 (defn get-id
   [req]
@@ -43,21 +50,37 @@
   [req]
   (if-not (:identity req)
     (unauthorized)
-    {:status 200
-     :headers {"Content-Type" "application/json"}
-     :body (json/write-str
-            {:categories (get-in
-                          @storage
-                          [(get-id req) :categories])})}))
+    (api-response
+     200
+     {:categories (get-in
+                    @storage
+                    [(get-id req) :categories])
+      :date (get-in @storage [(get-id req) :date])})))
+
+(defn save-logger!
+  [id categories]
+  (swap!
+    storage
+    (fn [s]
+      (->
+        s
+        (assoc-in [id :date] (t/now))
+        (assoc-in [id :categories] categories)))))
 
 (defn upload-handler
   [req]
   (if-not (:identity req)
     (unauthorized)
-    {:status 200
-     :headers {"Content-Type" "application/json"}
-     :body (json/write-str
-            {:response req})}))
+    (let [request-body (json/read-str
+                         (ring.util.request/body-string req)
+                         :key-fn keyword)
+          categories (:categories request-body)
+          _ (prn request-body)
+          id (get-id req)]
+      (save-logger! id categories)
+      (api-response
+        200
+        {:response request-body}))))
 
 (defn register-logger!
   [id login password]
@@ -76,14 +99,10 @@
         login (get-in req [:params :login])
         password (get-in req [:params :password])]
     (if (get @storage id)
-      {:status 200
-       :headers {"Content-Type" "application/json"}
-       :body (json/write-str {:response (format "'%s' already exists" id)})}
+      (api-response 200 {:response (format "'%s' already exists" id)})
       (do
         (register-logger! id login password)
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body (json/write-str {:response (format "'%s' created" id)})}))))
+        (api-response 200 {:response (format "'%s' created" id)})))))
 
 (defn my-authfn
   [req authdata]
@@ -116,12 +135,14 @@
 
 (defonce server (atom nil))
 
-(defn stop-server! []
+(defn stop-server!
+  []
   (when-not (nil? @server)
     (@server :timeout 100)
     (reset! server nil)))
 
-(defn start-server! []
+(defn start-server!
+  []
   (reset! server (hks/run-server #'app {:port 8080})))
 
 (defn -main [& args]

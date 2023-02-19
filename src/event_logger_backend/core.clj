@@ -4,13 +4,8 @@
             [ring.middleware.defaults :refer :all]
             [buddy.auth.middleware :as buddy]
             [buddy.auth.backends :as backends]
-            [clojure.pprint :as pp]
             [reitit.ring :as ring]
-            [hiccup.core :as h]
-            [hiccup.page :as p]
-            [hiccup.form :as f]
-            [clojure.data.json :as json]
-            [hiccup.element :as e]))
+            [clojure.data.json :as json]))
 
 (def url-base "")
 

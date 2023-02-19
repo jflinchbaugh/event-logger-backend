@@ -72,7 +72,8 @@
    id
    {:login login
     :password password
-    :categories []}))
+    :categories []
+    :date nil}))
 
 (defn register-handler
   [req]

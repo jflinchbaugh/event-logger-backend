@@ -1,37 +1,121 @@
 (ns event-logger-backend.core
   (:gen-class)
   (:require [org.httpkit.server :as hks]
-            [reitit.ring :as ring]))
+            [ring.middleware.defaults :refer :all]
+            [buddy.auth.middleware :as buddy]
+            [buddy.auth.backends :as backends]
+            [clojure.pprint :as pp]
+            [reitit.ring :as ring]
+            [hiccup.core :as h]
+            [hiccup.page :as p]
+            [hiccup.form :as f]
+            [clojure.data.json :as json]
+            [hiccup.element :as e]))
 
-(defn handler [req]
-  {:status  200
-   :headers {"Content-Type" "text/plain"}
-   :body    (str "hello HTTP! " req)})
+(def url-base "")
 
-(defn login-form [req]
-  {:status  200
-   :headers {"Content-Type" "text/plain"}
-   :body    (str "hello HTTP! " req)})
+(def realm "event-logger")
 
-(defn login-action [req]
-  {:status  200
-   :headers {"Content-Type" "text/plain"}
-   :body    (str "hello HTTP! " req)})
+(defonce storage (atom {}))
 
-(defn not-found [& _]
+(defn url [u]
+  (str url-base u))
+
+(defn not-found
+  [& _]
   {:status 404
    :headers {"Content-Type" "text/plain"}
    :body "Not Found"})
 
+(defn unauthorized
+  [& _]
+  {:status 401
+   :headers {"Content-Type" "text/plain"
+             "WWW-Authenticate" (format "Basic realm=%s" realm)}
+   :body "Authentication Required"})
+
+(defn ping-handler
+  [req]
+  {:status  200
+   :headers {"Content-Type" "text/plain"}
+   :body    "pong\n"})
+
+(defn get-id
+  [req]
+  (get-in req [:path-params :id]))
+
+(defn download-handler
+  [req]
+  (if-not (:identity req)
+    (unauthorized)
+    {:status 200
+     :headers {"Content-Type" "application/json"}
+     :body (json/write-str
+            {:categories (get-in
+                          @storage
+                          [(get-id req) :categories])})}))
+
+(defn upload-handler
+  [req]
+  (if-not (:identity req)
+    (unauthorized)
+    {:status 200
+     :headers {"Content-Type" "application/json"}
+     :body (json/write-str
+            {:response req})}))
+
+(defn register-logger!
+  [id login password]
+  (swap!
+   storage
+   assoc
+   id
+   {:login login
+    :password password
+    :categories []}))
+(defn register-handler
+  [req]
+  (let [id (get-id req)
+        login (get-in req [:params :login])
+        password (get-in req [:params :password])]
+    (if (get @storage id)
+      {:status 200
+       :headers {"Content-Type" "application/json"}
+       :body (json/write-str {:response (format "'%s' already exists" id)})}
+      (do
+        (register-logger! id login password)
+        {:status 200
+         :headers {"Content-Type" "application/json"}
+         :body (json/write-str {:response (format "'%s' created" id)})}))))
+
+(defn my-authfn
+  [req authdata]
+  (let [login (:username authdata)
+        password (:password authdata)
+        id (get-id req)
+        existing-logger (get @storage id)]
+    (when (= ((juxt :login :password) existing-logger) [login password])
+      login)))
+
+(def backend (backends/basic {:realm realm :authfn my-authfn}))
+
+(defn authenticated-for-logger [handler]
+  (buddy/wrap-authentication handler backend))
+
 (def app
-  (ring/ring-handler
-    (ring/router
-      [["/api"
-        ["/upload" {:get handler}]
-        ["/auth" {:get login-form
-                  :post login-action}]]
-       ])
-    not-found))
+  (-> [["/api"
+        ["/ping" ping-handler]
+        ["/register/:id" {:post register-handler}]
+        ["/logger/:id" {:middleware [authenticated-for-logger]
+                        :get download-handler
+                        :post upload-handler}]]]
+      (ring/router)
+      (ring/ring-handler not-found)
+      (wrap-defaults
+       (assoc
+        api-defaults
+        :proxy true
+        :static {:resources "public"}))))
 
 (defonce server (atom nil))
 
@@ -51,8 +135,7 @@
 
   (stop-server!)
 
-  (app {:request-method :get :uri "/thing"})
-  (app {:request-method :get :uri "/api/upload"})
+  (app {:scheme :http :request-method :get :uri "/api/logger/x"})
 
 ;
   )

@@ -38,7 +38,7 @@
   [req]
   {:status  200
    :headers {"Content-Type" "text/plain"}
-   :body    "pong\n"})
+   :body    "pong"})
 
 (defn get-id
   [req]

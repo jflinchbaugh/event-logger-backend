@@ -27,3 +27,8 @@ delete the event-logger:
 ```
 $ curl -s -v -u u:p -X delete http://localhost:8080/api/logger/z
 ```
+
+static content, like the stylesheet, is available as well:
+```
+$ curl -s -v http://localhost:8080/css/style.css
+```

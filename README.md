@@ -22,3 +22,8 @@ $ curl -s -v -u u:p \
   -d '{"categories": [{"thing": true,"whatever": 2}]}' \
   http://localhost:8080/api/logger/z
 ```
+
+delete the event-logger:
+```
+$ curl -s -v -u u:p -X delete http://localhost:8080/api/logger/z
+```

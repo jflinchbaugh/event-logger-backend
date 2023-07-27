@@ -42,20 +42,21 @@
   [req]
   (api-response 200 {:response "pong"}))
 
-(defn get-id
+(defn get-logger
   [req]
   (get-in req [:path-params :id]))
 
 (defn download-handler
   [req]
   (if-not (:identity req)
-    (unauthorized)
-    (api-response
-     200
-     {:categories (get-in
-                    @storage
-                    [(get-id req) :categories])
-      :date (get-in @storage [(get-id req) :date])})))
+    (not-found)
+    (let [logger (get-logger req)]
+      (api-response
+        200
+        {:categories (get-in
+                       @storage
+                       [(get-logger req) :categories])
+         :date (get-in @storage [(get-logger req) :date])}))))
 
 (defn save-logger!
   [id categories]
@@ -70,13 +71,13 @@
 (defn upload-handler
   [req]
   (if-not (:identity req)
-    (unauthorized)
+    (not-found)
     (let [request-body (json/read-str
                          (ring.util.request/body-string req)
                          :key-fn keyword)
           categories (:categories request-body)
           _ (prn request-body)
-          id (get-id req)]
+          id (get-logger req)]
       (save-logger! id categories)
       (api-response
         200
@@ -93,9 +94,20 @@
     :categories []
     :date nil}))
 
+(defn unregister-logger!
+  [id]
+  (swap!
+    storage
+    dissoc
+    id))
+
+(defn owner?
+  [login logger]
+  (= (:login logger) login))
+
 (defn register-handler
   [req]
-  (let [id (get-id req)
+  (let [id (get-logger req)
         login (get-in req [:params :login])
         password (get-in req [:params :password])]
     (if (get @storage id)
@@ -104,11 +116,23 @@
         (register-logger! id login password)
         (api-response 200 {:response (format "'%s' created" id)})))))
 
+(defn unregister-handler
+  [req]
+  (let [id (get-logger req)
+        logger (get @storage id)
+        login (:identity req)]
+    (if-not (and logger (owner? login logger))
+      (not-found)
+      (do
+        (unregister-logger! id)
+        (api-response 200 {:response (format "'%s' deleted" id)}))
+      )))
+
 (defn my-authfn
   [req authdata]
   (let [login (:username authdata)
         password (:password authdata)
-        id (get-id req)
+        id (get-logger req)
         existing-logger (get @storage id)]
     (when (= ((juxt :login :password) existing-logger) [login password])
       login)))
@@ -124,7 +148,8 @@
         ["/register/:id" {:post register-handler}]
         ["/logger/:id" {:middleware [authenticated-for-logger]
                         :get download-handler
-                        :post upload-handler}]]]
+                        :post upload-handler
+                        :delete unregister-handler}]]]
       (ring/router)
       (ring/ring-handler not-found)
       (wrap-defaults
@@ -154,6 +179,11 @@
   (stop-server!)
 
   (app {:scheme :http :request-method :get :uri "/api/logger/x"})
+
+  @storage
+
+  (swap! storage dissoc "mine")
+
 
 ;
   )

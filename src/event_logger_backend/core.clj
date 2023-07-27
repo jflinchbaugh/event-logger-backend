@@ -92,7 +92,7 @@
    {:login login
     :password password
     :categories []
-    :date nil}))
+    :date (t/now)}))
 
 (defn unregister-logger!
   [id]

@@ -20,27 +20,27 @@
   (str url-base u))
 
 (defn api-response
-  [code response-map]
+  [code document]
   {:status code
-   :headers {"Content-Type" "application/json"}
-   :body (json/write-str response-map)})
+   :headers {"Content-Type" "text/plain"}
+   :body document})
 
 (defn not-found
   [& _]
   (api-response
    404
-   {:error "Not Found"}))
+   "Not Found"))
 
 (defn unauthorized
   [& _]
   {:status 401
-   :headers {"Content-Type" "application/json"
+   :headers {"Content-Type" "text/plain"
              "WWW-Authenticate" (format "Basic realm=%s" realm)}
-   :body (json/write-str {:error "Unauthorized"})})
+   :body "Unauthorized"})
 
 (defn ping-handler
   [req]
-  (api-response 200 {:response "pong"}))
+  (api-response 200 "pong"))
 
 (defn get-logger
   [req]
@@ -53,35 +53,29 @@
     (let [logger (get-logger req)]
       (api-response
         200
-        {:categories (get-in
-                       @storage
-                       [(get-logger req) :categories])
-         :date (get-in @storage [(get-logger req) :date])}))))
+        (get-in @storage [(get-logger req) :document])))))
 
 (defn save-logger!
-  [id categories]
+  [id document]
   (swap!
     storage
     (fn [s]
       (->
         s
         (assoc-in [id :date] (t/now))
-        (assoc-in [id :categories] categories)))))
+        (assoc-in [id :document] document)))))
 
 (defn upload-handler
   [req]
   (if-not (:identity req)
     (not-found)
-    (let [request-body (json/read-str
-                         (ring.util.request/body-string req)
-                         :key-fn keyword)
-          categories (:categories request-body)
-          _ (prn request-body)
+    (let [request-body (ring.util.request/body-string req)
           id (get-logger req)]
-      (save-logger! id categories)
+      (prn id request-body)
+      (save-logger! id request-body)
       (api-response
         200
-        {:response request-body}))))
+        request-body))))
 
 (defn register-logger!
   [id login password]
@@ -91,7 +85,7 @@
    id
    {:login login
     :password password
-    :categories []
+    :document nil
     :date (t/now)}))
 
 (defn unregister-logger!
@@ -111,10 +105,10 @@
         login (get-in req [:params :login])
         password (get-in req [:params :password])]
     (if (get @storage id)
-      (api-response 200 {:response (format "'%s' already exists" id)})
+      (api-response 200 (format "'%s' already exists" id))
       (do
         (register-logger! id login password)
-        (api-response 200 {:response (format "'%s' created" id)})))))
+        (api-response 200 (format "'%s' created" id))))))
 
 (defn unregister-handler
   [req]
@@ -125,7 +119,7 @@
       (not-found)
       (do
         (unregister-logger! id)
-        (api-response 200 {:response (format "'%s' deleted" id)}))
+        (api-response 200 (format "'%s' deleted" id)))
       )))
 
 (defn my-authfn
@@ -179,6 +173,10 @@
   (stop-server!)
 
   (app {:scheme :http :request-method :get :uri "/api/logger/x"})
+
+  (app {:scheme :http :request-method :get :uri "/api/logger/events"})
+
+  (app {:scheme :http :request-method :get :uri "/api/ping"})
 
   @storage
 

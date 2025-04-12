@@ -2,12 +2,10 @@
   (:gen-class)
   (:require [org.httpkit.server :as hks]
             [ring.middleware.defaults :as rmd]
+            [ring.util.request :as rur]
             [buddy.auth.middleware :as buddy]
             [buddy.auth.backends :as backends]
-            [reitit.ring :as ring]
-            [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [tick.core :as t]))
+            [reitit.ring :as ring]))
 
 (def url-base "")
 
@@ -39,7 +37,7 @@
    :body "Unauthorized"})
 
 (defn ping-handler
-  [req]
+  [_]
   (api-response 200 "pong"))
 
 (defn get-logger
@@ -53,7 +51,7 @@
     (let [logger (get-logger req)]
       (api-response
         200
-        (get-in @storage [(get-logger req) :document])))))
+        (get-in @storage [logger :document])))))
 
 (defn save-logger!
   [id document]
@@ -62,14 +60,13 @@
     (fn [s]
       (->
         s
-        (assoc-in [id :date] (t/now))
         (assoc-in [id :document] document)))))
 
 (defn upload-handler
   [req]
   (if-not (:identity req)
     (not-found)
-    (let [request-body (ring.util.request/body-string req)
+    (let [request-body (rur/body-string req)
           id (get-logger req)]
       (save-logger! id request-body)
       (api-response
@@ -84,8 +81,7 @@
    id
    {:login login
     :password password
-    :document nil
-    :date (t/now)}))
+    :document nil}))
 
 (defn unregister-logger!
   [id]
@@ -147,7 +143,7 @@
       (ring/ring-handler not-found)
       (rmd/wrap-defaults
        (assoc
-        api-defaults
+        rmd/api-defaults
         :proxy true
         :static {:resources "public"}))))
 
@@ -163,7 +159,7 @@
   []
   (reset! server (hks/run-server #'app {:port 8080})))
 
-(defn -main [& args]
+(defn -main [& _]
   (start-server!))
 
 (comment
@@ -182,5 +178,4 @@
   (swap! storage dissoc "mine")
 
 
-;
   )

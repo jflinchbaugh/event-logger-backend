@@ -1,7 +1,7 @@
 (ns event-logger-backend.core
   (:gen-class)
   (:require [org.httpkit.server :as hks]
-            [ring.middleware.defaults :refer :all]
+            [ring.middleware.defaults :as rmd]
             [buddy.auth.middleware :as buddy]
             [buddy.auth.backends :as backends]
             [reitit.ring :as ring]
@@ -71,7 +71,6 @@
     (not-found)
     (let [request-body (ring.util.request/body-string req)
           id (get-logger req)]
-      (prn id request-body)
       (save-logger! id request-body)
       (api-response
         200
@@ -146,7 +145,7 @@
                         :delete unregister-handler}]]]
       (ring/router)
       (ring/ring-handler not-found)
-      (wrap-defaults
+      (rmd/wrap-defaults
        (assoc
         api-defaults
         :proxy true

@@ -9,6 +9,7 @@ spec:
       image: localhost/event-logger-backend:latest
       ports:
         - containerPort: 8000
+          hostIp: 127.0.0.1
           hostPort: 8000
       env:
         - name: port
@@ -19,11 +20,11 @@ spec:
       image: ghcr.io/xtdb/xtdb
       ports:
         - containerPort: 3000
+          hostIp: 127.0.0.1
           hostPort: 3000
         - containerPort: 5432
+          hostIp: 127.0.0.1
           hostPort: 5432
-        - containerPort: 8080
-          hostPort: 8081
       volumeMounts:
         - mountPath: /var/lib/xtdb
           name: xtdb-data

@@ -32,3 +32,18 @@ static content, like the stylesheet, is available as well:
 ```
 $ curl -s -v http://localhost:8080/css/style.css
 ```
+
+build the container image:
+```
+$ make
+```
+
+start the containers: app + xtdb 2:
+```
+$ podman kube play event-logger-backend.yaml 
+```
+
+stop the containers: app + xtdb 2:
+```
+$ podman kube down event-logger-backend.yaml 
+```

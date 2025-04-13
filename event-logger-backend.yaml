@@ -27,5 +27,6 @@ spec:
           name: xtdb-data
   volumes:
     - name: xtdb-data
-      persistentVolumeClaim:
-        claimName: xtdb-data
+      hostPath:
+        path: /home/john/xtdb-data
+        type: Directory

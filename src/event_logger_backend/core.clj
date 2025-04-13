@@ -5,11 +5,16 @@
             [ring.util.request :as rur]
             [buddy.auth.middleware :as buddy]
             [buddy.auth.backends :as backends]
+            [xtdb.client :as xtc]
+            [xtdb.api :as xt]
+            [xtdb.node :as xtn]
             [reitit.ring :as ring]))
 
-(def url-base "")
+(def ^:const url-base "")
 
-(def realm "event-logger")
+(def ^:const realm "event-logger")
+
+(def ^:const xtdb-url "http://localhost:3000")
 
 (defonce storage (atom {}))
 
@@ -147,6 +152,33 @@
         :proxy true
         :static {:resources "public"}))))
 
+(defn connect-db
+  "wire storage atom into xtdb"
+  []
+  (remove-watch storage :to-xtdb)
+
+  (with-open [node (xtc/start-client xtdb-url)]
+    (->>
+      (xt/q node '(from :loggers [_id document login password]))
+      (reduce
+        (fn [store doc] (assoc store (:xt/id doc) (dissoc doc :xt/id)))
+        {})
+      (reset! storage)))
+
+  (add-watch storage :to-xtdb
+    (fn [name atom old-val new-val]
+      (let [old-keys (keys old-val)
+            new-keys (keys new-val)
+            removed (remove (set new-keys) old-keys)]
+        (with-open [node (xtc/start-client xtdb-url)]
+          (xt/submit-tx node
+            (concat
+              (for [id removed]
+                [:delete-docs :loggers id])
+              (for [doc new-val]
+                [:put-docs :loggers
+                (merge {:xt/id (first doc)} (second doc))]))))))))
+
 (defonce server (atom nil))
 
 (defn stop-server!
@@ -157,12 +189,17 @@
 
 (defn start-server!
   []
-  (reset! server (hks/run-server #'app {:port 8080})))
+  (if (nil? @server)
+    (do
+      (connect-db)
+      (reset! server (hks/run-server #'app {:port 8080})))
+    "server already running"))
 
 (defn -main [& _]
   (start-server!))
 
 (comment
+
   (start-server!)
 
   (stop-server!)
@@ -174,8 +211,5 @@
   (app {:scheme :http :request-method :get :uri "/api/ping"})
 
   @storage
-
-  (swap! storage dissoc "mine")
-
 
   )

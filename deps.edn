@@ -8,10 +8,18 @@
   com.fzakaria/slf4j-timbre {:mvn/version "0.4.1"}
   tick/tick {:mvn/version "1.0"}
   hiccup/hiccup {:mvn/version "1.0.5"}
-  com.xtdb/xtdb-core {:mvn/version "1.24.5"}
-  com.xtdb/xtdb-rocksdb {:mvn/version "1.24.5"}}
+  com.xtdb/xtdb-api {:mvn/version "2.0.0-beta6"}
+  com.xtdb/xtdb-http-client-jvm {:mvn/version "2.0.0-beta6"}
+
+  ;; xtdb-core for running an in-process (test) node (JDK 21+)
+  com.xtdb/xtdb-core {:mvn/version "2.0.0-beta6"}}
 
  :paths ["src" "test" "resources"]
 
  :aliases
- {:run {:main-opts ["-m" "event-logger-backend.core"]}}}
+ {:run {:main-opts ["-m" "event-logger-backend.core"]}
+  :xtdb {:jvm-opts ["--add-opens=java.base/java.nio=ALL-UNNAMED"
+                    "-Dio.netty.tryReflectionSetAccessible=true"]}
+  :dev {:jvm-opts ["--add-opens=java.base/java.nio=ALL-UNNAMED"
+                    "-Dio.netty.tryReflectionSetAccessible=true"]}
+  }}

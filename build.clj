@@ -4,7 +4,6 @@
 (def lib 'com.hjsoft/event-logger-backend)
 (def version (format "0.1.%s" (b/git-count-revs nil)))
 (def class-dir "target/classes")
-(def jar-file (format "target/%s-%s.jar" (name lib) version))
 (def uber-file (format "target/%s-%s-standalone.jar" (name lib) version))
 
 ;; delay to defer side effects (artifact downloads)

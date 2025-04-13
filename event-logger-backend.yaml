@@ -28,5 +28,5 @@ spec:
   volumes:
     - name: xtdb-data
       hostPath:
-        path: /home/john/xtdb-data
+        path: /home/john/xtdb2-data
         type: Directory

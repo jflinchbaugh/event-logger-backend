@@ -116,6 +116,14 @@
         (api-response 200 (format "'%s' deleted" id)))
       )))
 
+(defn identity-wrapper [handler]
+  (fn [req]
+    (prn (:identity req))
+    (if (nil? (:identity req))
+      (unauthorized)
+      (handler req)))
+  )
+
 (defn my-authfn
   [req authdata]
   (let [login (:username authdata)
@@ -135,7 +143,7 @@
        ["/api"
         ["/ping" ping-handler]
         ["/register/:id" {:post register-handler}]
-        ["/logger/:id" {:middleware [authenticated-for-logger]
+        ["/logger/:id" {:middleware [authenticated-for-logger identity-wrapper]
                         :get download-handler
                         :post upload-handler
                         :delete unregister-handler}]]]

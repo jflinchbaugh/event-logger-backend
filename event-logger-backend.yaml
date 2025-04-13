@@ -19,9 +19,6 @@ spec:
     - name: xtdb
       image: ghcr.io/xtdb/xtdb
       ports:
-        - containerPort: 3000
-          hostIp: 127.0.0.1
-          hostPort: 3000
         - containerPort: 5432
           hostIp: 127.0.0.1
           hostPort: 5432

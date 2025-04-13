@@ -143,7 +143,8 @@
         ["/logger/:id" {:middleware [authenticated-for-logger]
                         :get download-handler
                         :post upload-handler
-                        :delete unregister-handler}]]]
+                        :delete unregister-handler}]]
+       ["/" (constantly {:status 301 :headers {"Location" "/index.html"}})]]
       (ring/router)
       (ring/ring-handler not-found)
       (rmd/wrap-defaults

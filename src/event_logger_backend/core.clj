@@ -12,6 +12,8 @@
 
 (def ^:const realm "event-logger")
 
+(def ^:const base-url "/storage")
+
 (defonce storage (atom {}))
 
 (defn api-response
@@ -129,21 +131,24 @@
   (buddy/wrap-authentication handler backend))
 
 (def app
-  (-> [["/api"
+  (-> [base-url
+       ["/api"
         ["/ping" ping-handler]
         ["/register/:id" {:post register-handler}]
         ["/logger/:id" {:middleware [authenticated-for-logger]
                         :get download-handler
                         :post upload-handler
-                        :delete unregister-handler}]]
-       ["/" (constantly {:status 301 :headers {"Location" "/index.html"}})]]
+                        :delete unregister-handler}]]]
       (ring/router)
-      (ring/ring-handler not-found)
+      (ring/ring-handler
+        (ring/routes
+          (ring/create-resource-handler {:path base-url})
+          not-found))
       (rmd/wrap-defaults
        (assoc
         rmd/api-defaults
         :proxy true
-        :static {:resources "public"}))))
+        ))))
 
 (defn connect-db
   "wire storage atom into xtdb"
@@ -197,7 +202,7 @@
 
 (comment
 
-  (start-server! 8080 "http://localhost:3000/")
+  (start-server! 8000 "http://localhost:3000")
 
   (stop-server!)
 

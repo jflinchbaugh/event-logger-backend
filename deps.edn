@@ -18,8 +18,5 @@
 
  :aliases
  {:run {:main-opts ["-m" "event-logger-backend.core"]}
-  :xtdb {:jvm-opts ["--add-opens=java.base/java.nio=ALL-UNNAMED"
-                    "-Dio.netty.tryReflectionSetAccessible=true"]}
-  :dev {:jvm-opts ["--add-opens=java.base/java.nio=ALL-UNNAMED"
-                    "-Dio.netty.tryReflectionSetAccessible=true"]}
-  }}
+  :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.8"}}
+          :ns-default build}}}

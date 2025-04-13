@@ -10,17 +10,11 @@
             [xtdb.node :as xtn]
             [reitit.ring :as ring]))
 
-(def ^:const url-base "")
-
 (def ^:const realm "event-logger")
 
 (def ^:const xtdb-url "http://localhost:3000")
 
 (defonce storage (atom {}))
-
-(defn url
-  [u]
-  (str url-base u))
 
 (defn api-response
   [code document]

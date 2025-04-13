@@ -2,4 +2,5 @@
 
 cd /app
 
-java -server -jar app.jar
+java -server -jar app.jar "${port}" "${xtdburl}"
+

@@ -12,8 +12,6 @@
 
 (def ^:const realm "event-logger")
 
-(def ^:const xtdb-url "http://localhost:3000")
-
 (defonce storage (atom {}))
 
 (defn api-response
@@ -149,7 +147,7 @@
 
 (defn connect-db
   "wire storage atom into xtdb"
-  []
+  [xtdb-url]
   (remove-watch storage :to-xtdb)
 
   (with-open [node (xtc/start-client xtdb-url)]
@@ -183,19 +181,23 @@
     (reset! server nil)))
 
 (defn start-server!
-  []
+  [port xtdb-url]
   (if (nil? @server)
     (do
-      (connect-db)
-      (reset! server (hks/run-server #'app {:port 8080})))
+      (connect-db xtdb-url)
+      (reset! server (hks/run-server #'app {:port port})))
     "server already running"))
 
-(defn -main [& _]
-  (start-server!))
+(defn -main [& [port xtdb-url]]
+  (if (or (nil? port) (nil? xtdb-url))
+    (println "Usage: <port> <xtdb-url>")
+    (do
+      (start-server! (Integer/parseInt port) xtdb-url)
+      (println "server started"))))
 
 (comment
 
-  (start-server!)
+  (start-server! 8080 "http://localhost:3000/")
 
   (stop-server!)
 

@@ -1,6 +1,7 @@
 (ns event-logger-backend.core
   (:gen-class)
   (:require [org.httpkit.server :as hks]
+            [reitit.ring :as ring]
             [ring.middleware.defaults :as rmd]
             [ring.util.request :as rur]
             [buddy.auth.middleware :as buddy]
@@ -8,7 +9,9 @@
             [xtdb.client :as xtc]
             [xtdb.api :as xt]
             [xtdb.node :as xtn]
-            [reitit.ring :as ring]))
+            [taoensso.timbre :as log]))
+
+;;(log/merge-config! {:ns-filter #{"event-logger-backend.*"}})
 
 (def ^:const realm "event-logger")
 
@@ -59,7 +62,8 @@
     (fn [s]
       (->
         s
-        (assoc-in [id :document] document)))))
+        (assoc-in [id :document] document))))
+  (log/info (format "Saved document for '%s'" id)))
 
 (defn upload-handler
   [req]
@@ -80,14 +84,16 @@
    id
    {:login login
     :password password
-    :document nil}))
+    :document nil})
+  (log/info (format "Registered '%s' for '%s'" id login)))
 
 (defn unregister-logger!
   [id]
   (swap!
     storage
     dissoc
-    id))
+    id)
+  (log/info (format "Unregistered '%s'" id)))
 
 (defn owner?
   [login logger]
@@ -116,9 +122,8 @@
         (api-response 200 (format "'%s' deleted" id)))
       )))
 
-(defn identity-wrapper [handler]
+(defn identity-required-wrapper [handler]
   (fn [req]
-    (prn (:identity req))
     (if (nil? (:identity req))
       (unauthorized)
       (handler req)))
@@ -143,7 +148,8 @@
        ["/api"
         ["/ping" ping-handler]
         ["/register/:id" {:post register-handler}]
-        ["/logger/:id" {:middleware [authenticated-for-logger identity-wrapper]
+        ["/logger/:id" {:middleware
+                        [authenticated-for-logger identity-required-wrapper]
                         :get download-handler
                         :post upload-handler
                         :delete unregister-handler}]]]
@@ -198,15 +204,15 @@
   (if (nil? @server)
     (do
       (connect-db xtdb-url)
-      (reset! server (hks/run-server #'app {:port port})))
+      (reset! server (hks/run-server #'app {:port port}))
+      (log/info "Server started."))
     "server already running"))
 
 (defn -main [& [port xtdb-url]]
   (if (or (nil? port) (nil? xtdb-url))
     (println "Usage: <port> <xtdb-url>")
-    (do
       (start-server! (Integer/parseInt port) xtdb-url)
-      (println "server started"))))
+      ))
 
 (comment
 

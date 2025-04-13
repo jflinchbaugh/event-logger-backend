@@ -2,5 +2,5 @@
 
 cd /app
 
-java -server -jar app.jar "${port}" "${xtdburl}"
+java -server -Xms128m -Xmx128m -jar app.jar "${port}" "${xtdburl}"
 

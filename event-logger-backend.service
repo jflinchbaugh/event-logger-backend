@@ -6,8 +6,8 @@ After=network.target
 Type=simple
 User=john
 WorkingDirectory=/home/john/ci/event-logger-backend
-ExecStart=/bin/bash -l -c "podman kube play event-logger-backend.yaml"
-Restart=no
+ExecStart=/bin/bash -l -c "podman kube play -w event-logger-backend.yaml"
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=event-logger-backend
+After=network.target
+
+[Service]
+Type=simple
+User=john
+WorkingDirectory=/home/john/ci/event-logger-backend
+ExecStart=/bin/bash -l -c "podman kube play event-logger-backend.yaml"
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

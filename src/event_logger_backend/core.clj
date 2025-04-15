@@ -101,7 +101,7 @@
 
 (defn register-handler
   [req]
-  (let [id (get-logger req)
+  (let [id (get-in req [:params :id])
         login (get-in req [:params :login])
         password (get-in req [:params :password])]
     (if (get @storage id)
@@ -147,7 +147,7 @@
   (-> [base-url
        ["/api"
         ["/ping" ping-handler]
-        ["/register/:id" {:post register-handler}]
+        ["/register" {:post register-handler}]
         ["/logger/:id" {:middleware
                         [authenticated-for-logger identity-required-wrapper]
                         :get download-handler

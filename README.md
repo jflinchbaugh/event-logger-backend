@@ -7,7 +7,8 @@ $ clj -M:run
 
 register a new event-logger with login and password:
 ```
-$ curl -s -v -d login=u -d password=p  http://localhost:8080/storage/api/register/z
+$ curl -s -v -d login=u -d password=p  -d id=z \
+  http://localhost:8080/storage/api/register
 ```
 
 download the event-logger data:

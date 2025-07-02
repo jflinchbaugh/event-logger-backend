@@ -22,19 +22,26 @@
 (defn api-response
   [code document]
   {:status code
-   :headers {"Content-Type" "text/plain"}
+   :headers {"Content-Type" "text/plain"
+             "Access-Control-Allow-Origin" "*"
+             "Access-Control-Allow-Headers" "x-requested-with"
+             "Access-Control-Allow-Method" "*"
+             }
    :body document})
 
 (defn not-found
   [& _]
   (api-response
-   404
-   "Not Found"))
+    404
+    "Not Found"))
 
 (defn unauthorized
   [& _]
   {:status 401
    :headers {"Content-Type" "text/plain"
+             "Access-Control-Allow-Origin" "*"
+             "Access-Control-Allow-Headers" "x-requested-with"
+             "Access-Control-Allow-Method" "*"
              "WWW-Authenticate" (format "Basic realm=%s" realm)}
    :body "Unauthorized"})
 

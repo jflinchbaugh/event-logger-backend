@@ -48,3 +48,11 @@ stop the containers: app + xtdb 2:
 ```
 $ podman kube down event-logger-backend.yaml
 ```
+
+create a system service around the pods:
+```
+$ sudo cp event-logger-backend.service /usr/lib/systemd/system/event-logger-backend-service
+$ sudo systemctl enable event-logger-backend
+$ sudo systemctl start event-logger-backend
+$ sudo systemctl stop event-logger-backend
+```

@@ -14,8 +14,8 @@ spec:
       env:
         - name: port
           value: 8000
-        - name: xtdburl
-          value: http://xtdb:3000
+        - name: dbhost
+          value: xtdb
     - name: xtdb
       image: ghcr.io/xtdb/xtdb
       ports:

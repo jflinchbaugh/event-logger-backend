@@ -7,7 +7,6 @@
             [ring.util.request :as rur]
             [buddy.auth.middleware :as buddy]
             [buddy.auth.backends :as backends]
-            [xtdb.client :as xtc]
             [xtdb.api :as xt]
             [taoensso.telemere :as tel]))
 

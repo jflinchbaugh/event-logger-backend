@@ -173,18 +173,19 @@
      (reset! storage)))
 
   (add-watch storage :to-xtdb
-             (fn [name atom old-val new-val]
+             (fn [_name _atom old-val new-val]
                (let [old-keys (keys old-val)
                      new-keys (keys new-val)
-                     removed (remove (set new-keys) old-keys)]
-                 (let [node (xt/client {:host db-host})]
-                   (xt/submit-tx node
-                                 (concat
-                                  (for [id removed]
-                                    [:delete-docs :loggers id])
-                                  (for [doc new-val]
-                                    [:put-docs :loggers
-                                     (merge {:xt/id (first doc)} (second doc))]))))))))
+                     removed (remove (set new-keys) old-keys)
+                     node (xt/client {:host db-host})]
+                 (xt/submit-tx
+                  node
+                  (concat
+                   (for [id removed]
+                     [:delete-docs :loggers id])
+                   (for [doc new-val]
+                     [:put-docs :loggers
+                      (merge {:xt/id (first doc)} (second doc))])))))))
 
 (defonce server (atom nil))
 
@@ -224,7 +225,5 @@
 
   (let [node (xt/client {:host "localhost"})]
     (xt/q node '(from :loggers [*])))
-
-
 
   nil)

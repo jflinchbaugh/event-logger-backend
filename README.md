@@ -52,7 +52,16 @@ $ podman kube down event-logger-backend.yaml
 create a system service around the pods:
 ```
 $ sudo cp event-logger-backend.service /usr/lib/systemd/system/event-logger-backend-service
+$ sudo systemctl daemon-reload
 $ sudo systemctl enable event-logger-backend
 $ sudo systemctl start event-logger-backend
 $ sudo systemctl stop event-logger-backend
+```
+
+Create a user Quadlet around the pods:
+```
+$ loginctl enable-linger # so our services will start at boot and stay around
+$ cp event-logger-backend.kube .config/containers/systemd/
+$ systemctl --user daemon-reload
+$ systemctl --user start event-logger-backend
 ```

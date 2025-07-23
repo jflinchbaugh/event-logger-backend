@@ -1,0 +1,8 @@
+[Install]
+WantedBy=default.target
+
+[Unit]
+Description=event-logger-backend
+
+[Kube]
+Yaml=event-logger-backend.yaml

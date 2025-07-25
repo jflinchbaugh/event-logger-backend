@@ -58,7 +58,7 @@ $ sudo systemctl start event-logger-backend
 $ sudo systemctl stop event-logger-backend
 ```
 
-Create a user Quadlet around the pods:
+Create a user Quadlet to run pods:
 ```
 $ loginctl enable-linger # so our services will start at boot and stay around
 $ cp event-logger-backend.kube event-logger-backend.yaml $HOME/.config/containers/systemd/

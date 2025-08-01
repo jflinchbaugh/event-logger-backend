@@ -65,3 +65,4 @@ $ cp event-logger-backend.kube event-logger-backend.yaml $HOME/.config/container
 $ systemctl --user daemon-reload
 $ systemctl --user start event-logger-backend
 ```
+

@@ -102,7 +102,9 @@
       (api-response 200 (format "'%s' already exists" id))
       (do
         (register-logger! id login password)
-        (api-response 200 (format "'%s' created" id))))))
+        (api-response
+          200
+          (format "'%s' created. Access it as '%s'." id resource))))))
 
 (defn unregister-handler
   [req]

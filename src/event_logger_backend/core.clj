@@ -97,7 +97,8 @@
   [req]
   (let [id (get-in req [:params :id])
         login (get-in req [:params :login])
-        password (get-in req [:params :password])]
+        password (get-in req [:params :password])
+        resource (format "%s/api/logger/%s" base-url id)]
     (if (get @storage id)
       (api-response 200 (format "'%s' already exists" id))
       (do

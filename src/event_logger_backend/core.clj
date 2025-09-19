@@ -144,6 +144,11 @@
        ["/api"
         ["/ping" ping-handler]
         ["/register" {:post register-handler}]
+        ["/document/:id" {:middleware
+                        [authenticated-for-logger identity-required-wrapper]
+                        :get download-handler
+                        :post upload-handler
+                        :delete unregister-handler}]
         ["/logger/:id" {:middleware
                         [authenticated-for-logger identity-required-wrapper]
                         :get download-handler

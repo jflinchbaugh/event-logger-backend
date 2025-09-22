@@ -7,10 +7,6 @@ spec:
   containers:
     - name: xtdb
       image: ghcr.io/xtdb/xtdb:2.0.0
-      ports:
-        - containerPort: 5432
-          hostIp: 127.0.0.1
-          hostPort: 5432
       volumeMounts:
         - mountPath: /var/lib/xtdb
           name: xtdb-data

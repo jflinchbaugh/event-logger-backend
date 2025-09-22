@@ -66,3 +66,7 @@ $ systemctl --user daemon-reload
 $ systemctl --user start event-logger-backend
 ```
 
+Access the running XTDB server from the api server:
+```
+$ podman exec -it event-logger-backend-api psql -U xtdb -h xtdb
+```

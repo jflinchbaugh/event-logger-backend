@@ -1,15 +1,34 @@
 # event-logger-backend
 
-run the server:
-```
-$ clj -M:run
+### Development
+
+Run the tests:
+```bash
+make test
+# or
+clj -T:build run-tests
 ```
 
-register a new event-logger with login and password:
+Run the server:
+```bash
+clj -M:run
 ```
-$ curl -s -v -d login=u -d password=p  -d id=z \
-  http://localhost:8080/storage/api/register
+
+Build the standalone uberjar:
+```bash
+make uber
+# or
+clj -T:build uber
 ```
+
+Build the container image:
+```bash
+make container
+# or
+make
+```
+
+### Usage
 
 download the event-logger data:
 ```

@@ -9,12 +9,21 @@
 ;; delay to defer side effects (artifact downloads)
 (def basis (delay (b/create-basis {:project "deps.edn"})))
 
-(defn clean []
+(defn clean [_]
   (b/delete {:path "target"}))
 
+(defn run-tests [_]
+  (let [test-basis (b/create-basis {:project "deps.edn" :aliases [:test]})
+        cmds (b/java-command {:basis test-basis
+                             :main "clojure.main"
+                             :main-args ["-m" "cognitect.test-runner" "-d" "src/test"]})]
+    (let [{:keys [exit]} (b/process cmds)]
+      (when-not (zero? exit)
+        (throw (ex-info "Tests failed" {:exit exit}))))))
+
 (defn uber [_]
-  (clean)
-  (b/copy-dir {:src-dirs ["src" "resources"]
+  (clean nil)
+  (b/copy-dir {:src-dirs ["src/main" "resources"]
                :target-dir class-dir})
   (b/compile-clj {:basis @basis
                   :ns-compile '[event-logger-backend.core]

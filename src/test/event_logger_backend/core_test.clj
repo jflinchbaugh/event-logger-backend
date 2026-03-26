@@ -86,24 +86,12 @@
       (is (= 404 (:status response))))))
 
 (deftest my-authfn-test
-  (testing "my-authfn returns login if credentials match (plaintext)"
-    (reset! event-logger-backend.core/storage {"test-id" {:login "user" :password "pass"}})
-    (let [req {:path-params {:id "test-id"}}
-          authdata {:username "user" :password "pass"}]
-      (is (= "user" (event-logger-backend.core/my-authfn req authdata)))))
-
   (testing "my-authfn returns login if credentials match (hashed)"
     (let [hashed-pass (hashers/derive "pass")]
       (reset! event-logger-backend.core/storage {"test-id" {:login "user" :password hashed-pass}})
       (let [req {:path-params {:id "test-id"}}
             authdata {:username "user" :password "pass"}]
         (is (= "user" (event-logger-backend.core/my-authfn req authdata))))))
-
-  (testing "my-authfn returns nil if credentials don't match (plaintext)"
-    (reset! event-logger-backend.core/storage {"test-id" {:login "user" :password "pass"}})
-    (let [req {:path-params {:id "test-id"}}
-          authdata {:username "user" :password "wrong-pass"}]
-      (is (nil? (event-logger-backend.core/my-authfn req authdata)))))
 
   (testing "my-authfn returns nil if credentials don't match (hashed)"
     (let [hashed-pass (hashers/derive "pass")]
@@ -112,14 +100,3 @@
             authdata {:username "user" :password "wrong-pass"}]
         (is (nil? (event-logger-backend.core/my-authfn req authdata)))))))
 
-(deftest migrate-passwords-test
-  (testing "migrate-passwords! hashes plaintext passwords"
-    (let [storage (atom {"user1" {:login "user1" :password "plain1"}
-                         "user2" {:login "user2" :password (hashers/derive "plain2")}})]
-      (event-logger-backend.core/migrate-passwords! storage)
-      (let [s @storage]
-        (is (hashers/verify "plain1" (get-in s ["user1" :password])))
-        (is (not= "plain1" (get-in s ["user1" :password])))
-        (is (hashers/verify "plain2" (get-in s ["user2" :password])))
-        ;; Ensure user2's password wasn't double-hashed (still matches)
-        (is (clojure.string/starts-with? (get-in s ["user2" :password]) "bcrypt"))))))

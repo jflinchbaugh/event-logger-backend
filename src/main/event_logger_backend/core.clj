@@ -133,12 +133,7 @@
         id (get-logger req)
         existing-logger (get @storage id)]
     (when (and (= (:login existing-logger) login)
-               (let [stored-pass (:password existing-logger)]
-                 (if (try
-                       (boolean (hashers/parse-password stored-pass))
-                       (catch Exception _ false))
-                   (:valid (hashers/verify password stored-pass))
-                   (= password stored-pass))))
+               (:valid (hashers/verify password (:password existing-logger))))
       login)))
 
 (def backend (backends/basic {:realm realm :authfn my-authfn}))
@@ -174,23 +169,6 @@
         rmd/api-defaults
         :proxy true))))
 
-(defn migrate-passwords!
-  [storage-atom]
-  (swap!
-   storage-atom
-   (fn [s]
-     (reduce-kv
-      (fn [m id logger]
-        (let [pass (:password logger)]
-          (if (and pass
-                   (not (try
-                          (boolean (hashers/parse-password pass))
-                          (catch Exception _ false))))
-            (assoc-in m [id :password] (hashers/derive pass))
-            m)))
-      s
-      s))))
-
 (defn connect-db
   "wire storage atom into xtdb"
   [db-host]
@@ -202,8 +180,7 @@
      (reduce
       (fn [store doc] (assoc store (:xt/id doc) (dissoc doc :xt/id)))
       {})
-     (reset! storage))
-    (migrate-passwords! storage))
+     (reset! storage)))
 
   (add-watch storage :to-xtdb
              (fn [_name _atom old-val new-val]

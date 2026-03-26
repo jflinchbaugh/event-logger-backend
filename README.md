@@ -6,7 +6,7 @@ Run the tests:
 ```bash
 make test
 # or
-clj -T:build run-tests
+clj -T:build run-tests [-n event-logger-backend.core-test]
 ```
 
 Run the server:

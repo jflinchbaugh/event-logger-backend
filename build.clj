@@ -12,11 +12,13 @@
 (defn clean [_]
   (b/delete {:path "target"}))
 
-(defn run-tests [_]
+(defn run-tests [opts]
   (let [test-basis (b/create-basis {:project "deps.edn" :aliases [:test]})
-        cmds (b/java-command {:basis test-basis
-                             :main "clojure.main"
-                             :main-args ["-m" "cognitect.test-runner" "-d" "src/test"]})]
+        cmds (b/java-command
+               {:basis test-basis
+                :main "clojure.main"
+                :main-args (into ["-m" "cognitect.test-runner" "-d" "src/test"]
+                             (mapcat (fn [[k v]] [(str k) (str v)]) opts))})]
     (let [{:keys [exit]} (b/process cmds)]
       (when-not (zero? exit)
         (throw (ex-info "Tests failed" {:exit exit}))))))

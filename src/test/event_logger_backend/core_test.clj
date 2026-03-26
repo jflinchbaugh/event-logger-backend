@@ -1,6 +1,7 @@
 (ns event-logger-backend.core-test
   (:require [clojure.test :refer [deftest is testing]]
-            [event-logger-backend.core :refer [api-response not-found]]))
+            [event-logger-backend.core :refer [api-response not-found]]
+            [buddy.hashers :as hashers]))
 
 (deftest api-response-test
   (testing "api-response returns a map with correct status and body"
@@ -22,14 +23,16 @@
       (is (= "pong" (:body response))))))
 
 (deftest register-handler-test
-  (testing "register-handler creates a new logger"
+  (testing "register-handler creates a new logger with hashed password"
     (reset! event-logger-backend.core/storage {})
     (let [req {:params {:id "test-id" :login "user" :password "pass"}}
           response (event-logger-backend.core/register-handler req)]
       (is (= 200 (:status response)))
       (is (re-find #"'test-id' created" (:body response)))
-      (is (= {:login "user" :password "pass" :document nil}
-             (get @event-logger-backend.core/storage "test-id")))))
+      (let [stored-password (get-in @event-logger-backend.core/storage ["test-id" :password])]
+        (is (not= "pass" stored-password))
+        ;; buddy-hashers default is bcrypt
+        (is (clojure.string/starts-with? stored-password "bcrypt")))))
 
   (testing "register-handler returns an error if logger already exists"
     (reset! event-logger-backend.core/storage {"test-id" {:login "user"}})
@@ -83,14 +86,40 @@
       (is (= 404 (:status response))))))
 
 (deftest my-authfn-test
-  (testing "my-authfn returns login if credentials match"
+  (testing "my-authfn returns login if credentials match (plaintext)"
     (reset! event-logger-backend.core/storage {"test-id" {:login "user" :password "pass"}})
     (let [req {:path-params {:id "test-id"}}
           authdata {:username "user" :password "pass"}]
       (is (= "user" (event-logger-backend.core/my-authfn req authdata)))))
 
-  (testing "my-authfn returns nil if credentials don't match"
+  (testing "my-authfn returns login if credentials match (hashed)"
+    (let [hashed-pass (hashers/derive "pass")]
+      (reset! event-logger-backend.core/storage {"test-id" {:login "user" :password hashed-pass}})
+      (let [req {:path-params {:id "test-id"}}
+            authdata {:username "user" :password "pass"}]
+        (is (= "user" (event-logger-backend.core/my-authfn req authdata))))))
+
+  (testing "my-authfn returns nil if credentials don't match (plaintext)"
     (reset! event-logger-backend.core/storage {"test-id" {:login "user" :password "pass"}})
     (let [req {:path-params {:id "test-id"}}
           authdata {:username "user" :password "wrong-pass"}]
-      (is (nil? (event-logger-backend.core/my-authfn req authdata))))))
+      (is (nil? (event-logger-backend.core/my-authfn req authdata)))))
+
+  (testing "my-authfn returns nil if credentials don't match (hashed)"
+    (let [hashed-pass (hashers/derive "pass")]
+      (reset! event-logger-backend.core/storage {"test-id" {:login "user" :password hashed-pass}})
+      (let [req {:path-params {:id "test-id"}}
+            authdata {:username "user" :password "wrong-pass"}]
+        (is (nil? (event-logger-backend.core/my-authfn req authdata)))))))
+
+(deftest migrate-passwords-test
+  (testing "migrate-passwords! hashes plaintext passwords"
+    (let [storage (atom {"user1" {:login "user1" :password "plain1"}
+                         "user2" {:login "user2" :password (hashers/derive "plain2")}})]
+      (event-logger-backend.core/migrate-passwords! storage)
+      (let [s @storage]
+        (is (hashers/verify "plain1" (get-in s ["user1" :password])))
+        (is (not= "plain1" (get-in s ["user1" :password])))
+        (is (hashers/verify "plain2" (get-in s ["user2" :password])))
+        ;; Ensure user2's password wasn't double-hashed (still matches)
+        (is (clojure.string/starts-with? (get-in s ["user2" :password]) "bcrypt"))))))

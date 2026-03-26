@@ -7,6 +7,7 @@
             [ring.util.request :as rur]
             [buddy.auth.middleware :as buddy]
             [buddy.auth.backends :as backends]
+            [buddy.hashers :as hashers]
             [xtdb.api :as xt]
             [taoensso.telemere :as tel]))
 
@@ -80,7 +81,7 @@
    assoc
    id
    {:login login
-    :password password
+    :password (hashers/derive password)
     :document nil})
   (tel/log! :info (format "Registered '%s' for '%s'" id login)))
 
@@ -104,8 +105,8 @@
       (do
         (register-logger! id login password)
         (api-response
-          200
-          (format "'%s' created. Access it as '%s'." id resource))))))
+         200
+         (format "'%s' created. Access it as '%s'." id resource))))))
 
 (defn unregister-handler
   [req]
@@ -131,7 +132,13 @@
         password (:password authdata)
         id (get-logger req)
         existing-logger (get @storage id)]
-    (when (= ((juxt :login :password) existing-logger) [login password])
+    (when (and (= (:login existing-logger) login)
+               (let [stored-pass (:password existing-logger)]
+                 (if (try
+                       (boolean (hashers/parse-password stored-pass))
+                       (catch Exception _ false))
+                   (:valid (hashers/verify password stored-pass))
+                   (= password stored-pass))))
       login)))
 
 (def backend (backends/basic {:realm realm :authfn my-authfn}))
@@ -145,10 +152,10 @@
         ["/ping" ping-handler]
         ["/register" {:post register-handler}]
         ["/document/:id" {:middleware
-                        [authenticated-for-logger identity-required-wrapper]
-                        :get download-handler
-                        :post upload-handler
-                        :delete unregister-handler}]
+                          [authenticated-for-logger identity-required-wrapper]
+                          :get download-handler
+                          :post upload-handler
+                          :delete unregister-handler}]
         ["/logger/:id" {:middleware
                         [authenticated-for-logger identity-required-wrapper]
                         :get download-handler
@@ -167,6 +174,23 @@
         rmd/api-defaults
         :proxy true))))
 
+(defn migrate-passwords!
+  [storage-atom]
+  (swap!
+   storage-atom
+   (fn [s]
+     (reduce-kv
+      (fn [m id logger]
+        (let [pass (:password logger)]
+          (if (and pass
+                   (not (try
+                          (boolean (hashers/parse-password pass))
+                          (catch Exception _ false))))
+            (assoc-in m [id :password] (hashers/derive pass))
+            m)))
+      s
+      s))))
+
 (defn connect-db
   "wire storage atom into xtdb"
   [db-host]
@@ -178,7 +202,8 @@
      (reduce
       (fn [store doc] (assoc store (:xt/id doc) (dissoc doc :xt/id)))
       {})
-     (reset! storage)))
+     (reset! storage))
+    (migrate-passwords! storage))
 
   (add-watch storage :to-xtdb
              (fn [_name _atom old-val new-val]

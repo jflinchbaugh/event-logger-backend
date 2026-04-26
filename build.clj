@@ -1,4 +1,5 @@
 (ns build
+  (:refer-clojure :exclude [test])
   (:require [clojure.tools.build.api :as b]))
 
 (def lib 'com.hjsoft/event-logger-backend)
@@ -12,7 +13,7 @@
 (defn clean [_]
   (b/delete {:path "target"}))
 
-(defn run-tests [opts]
+(defn test [opts]
   (let [test-basis (b/create-basis {:project "deps.edn" :aliases [:test]})
         cmds (b/java-command
                {:basis test-basis

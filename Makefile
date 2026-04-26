@@ -3,7 +3,7 @@ all: container
 .PHONY: test
 
 test:
-	clj -T:build run-tests
+	clj -T:build test
 
 .PHONY: uber
 

@@ -4,6 +4,8 @@ RUN apt-get update -y \
     && apt-get upgrade -y \
     && apt-get install -y openjdk-25-jre-headless time postgresql-client
 
+RUN java -version
+
 RUN mkdir -p /app
 
 WORKDIR /app

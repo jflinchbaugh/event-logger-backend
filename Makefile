@@ -13,7 +13,7 @@ uber: test
 .PHONY: container
 
 container: uber
-	podman build -t event-logger-backend:latest .
+	podman build --no-cache --pull -t event-logger-backend:latest .
 
 run-server:
 	podman kube play --wait event-logger-backend.yaml
